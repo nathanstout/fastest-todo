@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todo</title>
+</head>
+
+<body>
+    <h1>Todo</h1>
+    <input id="input" type="text" placeholder="Enter todo..." />
+    <button id="btn">Add</button>
+    <ul id="list"></ul>
+
+    <script>
+        const STORAGE_KEY = 'todo';
+        const input = document.getElementById('input');
+        const addBtn = document.getElementById('btn');
+        const list = document.getElementById('list');
+
+        let todos = [];
+
+        function debounce(fn, delay) {
+            let timer;
+            return function (...args) {
+                clearTimeout(timer);
+                timer = setTimeout(() => fn(...args), delay);
+            };
+        }
+
+        const saveTodos = debounce(() => {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+        }, 100);
+
+        function createTodoItem(todo, index) {
+            const li = document.createElement('li');
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = todo.done;
+            checkbox.onchange = () => {
+                todo.done = checkbox.checked;
+                label.style.textDecoration = todo.done ? 'line-through' : '';
+                saveTodos();
+            };
+
+            const label = document.createElement('span');
+            label.textContent = todo.text;
+            label.style.marginLeft = '0.5em';
+            if (todo.done) label.style.textDecoration = 'line-through';
+
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'Remove';
+            removeBtn.style.marginLeft = '1em';
+            removeBtn.onclick = () => {
+                const currentIndex = todos.indexOf(todo);
+                if (currentIndex > -1) {
+                    todos.splice(currentIndex, 1);
+                }
+                li.remove();
+                saveTodos();
+            };
+
+            li.appendChild(checkbox);
+            li.appendChild(label);
+            li.appendChild(removeBtn);
+            return li;
+        }
+
+        function addTodo(text) {
+            const todo = { text, done: false };
+            todos.push(todo);
+            list.appendChild(createTodoItem(todo, todos.length - 1));
+            saveTodos();
+        }
+
+        function loadTodos() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                todos = saved ? JSON.parse(saved) : [];
+                todos.forEach((todo, i) => {
+                    list.appendChild(createTodoItem(todo, i));
+                });
+            } catch {
+                todos = [];
+            }
+        }
+
+        addBtn.onclick = () => {
+            const val = input.value.trim();
+            if (!val) return;
+            addTodo(val);
+            input.value = '';
+            input.focus();
+        };
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') addBtn.click();
+        });
+
+        loadTodos();
+    </script>
+</body>
+
+</html>
